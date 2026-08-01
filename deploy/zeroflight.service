@@ -1,0 +1,15 @@
+[Unit]
+Description=ZeroFlight INAV Companion API
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=dialout
+WorkingDirectory=/home/pi/zeroflight
+ExecStart=/usr/local/bin/zeroflight --config /etc/zeroflight/inav.yaml serve
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/autopilothub/zeroflight/internal/inav"
 	"gopkg.in/yaml.v3"
@@ -12,6 +13,12 @@ import (
 type File struct {
 	MAVLink MAVLink `yaml:"mavlink"`
 	Safety  Safety  `yaml:"safety"`
+	API     API     `yaml:"api"`
+}
+
+// API holds HTTP server settings.
+type API struct {
+	Listen string `yaml:"listen"`
 }
 
 // MAVLink holds connection parameters.
@@ -27,18 +34,19 @@ type MAVLink struct {
 
 // Safety holds navigation guard rails.
 type Safety struct {
-	MaxAltitudeM      float32 `yaml:"max_altitude_m"`
-	MaxRadiusM        float32 `yaml:"max_radius_m"`
-	ArrivalRadiusM    float64 `yaml:"arrival_radius_m"`
-	ArrivalAltitudeM  float32 `yaml:"arrival_altitude_m"`
+	MaxAltitudeM     float32 `yaml:"max_altitude_m"`
+	MaxRadiusM       float32 `yaml:"max_radius_m"`
+	ArrivalRadiusM   float64 `yaml:"arrival_radius_m"`
+	ArrivalAltitudeM float32 `yaml:"arrival_altitude_m"`
+	LinkTimeoutSec   float64 `yaml:"link_timeout_sec"`
 }
 
 // Default returns sensible defaults for Mamba F405 MK2 + INAV.
 func Default() File {
 	return File{
 		MAVLink: MAVLink{
-			Connection:        "serial:/dev/ttyAMA0:115200",
-			Device:            "/dev/ttyAMA0",
+			Connection:        "serial:/dev/serial0:115200",
+			Device:            "/dev/serial0",
 			Baud:              115200,
 			TargetSystemID:    1,
 			TargetComponentID: 1,
@@ -50,6 +58,10 @@ func Default() File {
 			MaxRadiusM:       500,
 			ArrivalRadiusM:   3,
 			ArrivalAltitudeM: 2,
+			LinkTimeoutSec:   3,
+		},
+		API: API{
+			Listen: "127.0.0.1:8080",
 		},
 	}
 }
@@ -89,4 +101,23 @@ func (f File) INAVConfig(connectionOverride string) (inav.Config, error) {
 		return base, nil
 	}
 	return inav.ParseConnection(conn, base)
+}
+
+// LinkTimeout returns the MAVLink stale link threshold.
+func (f File) LinkTimeout() time.Duration {
+	if f.Safety.LinkTimeoutSec <= 0 {
+		return 3 * time.Second
+	}
+	return time.Duration(f.Safety.LinkTimeoutSec * float64(time.Second))
+}
+
+// ListenAddr returns the HTTP API listen address.
+func (f File) ListenAddr(override string) string {
+	if override != "" {
+		return override
+	}
+	if f.API.Listen != "" {
+		return f.API.Listen
+	}
+	return "127.0.0.1:8080"
 }

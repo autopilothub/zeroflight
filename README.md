@@ -2,11 +2,13 @@
 
 Raspberry Pi companion app for autonomous flight with **Mamba F405 MK2** running **INAV** over **MAVLink**.
 
-## Features (Phase 1)
+## Features (MVP)
 
-- MAVLink telemetry: `ATTITUDE`, `GPS_RAW_INT`, `GLOBAL_POSITION_INT`, `HEARTBEAT`, `SYS_STATUS`
-- CLI `status` — live telemetry dashboard
-- CLI `goto` — `MAV_CMD_DO_REPOSITION` for INAV GCS NAV mode
+- MAVLink telemetry + `status` CLI
+- `goto` / `hover` (GCS NAV + `DO_REPOSITION`)
+- `mission upload` / `clear`
+- Geofence, `preflight`, CSV `log telemetry`
+- REST API (`serve`)
 
 ## Hardware
 
@@ -14,9 +16,9 @@ Raspberry Pi companion app for autonomous flight with **Mamba F405 MK2** running
 |------|---------|
 | FC | Mamba F405 MK2 |
 | Firmware | INAV 8.0+ |
-| Link | UART3 (TX3/RX3) ↔ RPi GPIO14/15 |
+| Link | UART6 (TX6/RX6) ↔ RPi GPIO14/15 |
 | Baud | 115200 |
-| INAV Port | UART3 → MAVLink ON |
+| INAV Port | UART6 → MAVLink ON |
 
 ### INAV CLI (recommended)
 
@@ -36,7 +38,7 @@ Enable **GCS NAV** mode on a transmitter switch before using `goto`.
 go build -o zeroflight ./cmd/zeroflight
 
 # cross-compile from Mac/Linux
-GOOS=linux GOARCH=arm64 go build -o zeroflight ./cmd/zeroflight
+make build-pi
 ```
 
 ## Documentation
@@ -46,6 +48,9 @@ GOOS=linux GOARCH=arm64 go build -o zeroflight ./cmd/zeroflight
 - [사용법](docs/usage.md) — 설치, CLI, 비행 절차
 - [하드웨어 설정](docs/hardware.md) — 배선, INAV 설정
 - [설정 파일](docs/configuration.md) — `inav.yaml` 항목
+- [배포](docs/deployment.md) — RPi, systemd, REST API
+
+개발 산출물 및 진행 상태: [aidlc-docs/aidlc-state.md](aidlc-docs/aidlc-state.md)
 
 ## Usage
 
@@ -57,10 +62,26 @@ GOOS=linux GOARCH=arm64 go build -o zeroflight ./cmd/zeroflight
 ./zeroflight status --once
 
 # override connection
-./zeroflight --connection serial:/dev/ttyAMA0:115200 status
+./zeroflight --connection serial:/dev/serial0:115200 status
 
 # send goto (GCS NAV must be active, GPS 3D fix, armed)
 ./zeroflight goto --lat 37.5665000 --lon 126.9780000 --alt 15 --wait
+
+# hold current position, change altitude
+./zeroflight hover --alt 15 --wait
+
+# upload waypoint mission (disarmed)
+./zeroflight mission upload -f configs/example-mission.yaml
+
+# preflight checklist
+./zeroflight preflight
+
+# log telemetry to CSV
+./zeroflight log telemetry -o logs/telemetry.csv --duration 5m
+
+# HTTP API server
+./zeroflight serve
+curl http://127.0.0.1:8080/api/v1/status
 ```
 
 ## INAV goto prerequisites
@@ -73,16 +94,18 @@ GOOS=linux GOARCH=arm64 go build -o zeroflight ./cmd/zeroflight
 ## Project layout
 
 ```
-cmd/zeroflight/     CLI entrypoint
-internal/inav/      INAV MAVLink adapter
-internal/config/    YAML configuration
-pkg/geo/            distance / bearing helpers
-configs/inav.yaml   default settings
+cmd/zeroflight/       CLI + serve
+internal/inav/        MAVLink adapter
+internal/api/         REST API
+internal/service/     long-lived session
+internal/safety/      geofence, preflight
+configs/inav.yaml     settings
+deploy/               systemd unit
 ```
 
 ## Limitations
 
-INAV MAVLink is **partial** — no raw IMU over MAVLink, no parameter API, mission upload is limited. See project planning docs for Phase 2+ (MSP raw IMU, mission manager, REST API).
+INAV MAVLink is **partial** — no raw IMU over MAVLink, no parameter API. Backlog: MSP raw IMU, web GCS.
 
 ## Safety
 

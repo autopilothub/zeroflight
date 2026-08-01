@@ -3,6 +3,7 @@ package inav
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/bluenviron/gomavlib/v3/pkg/dialects/ardupilotmega"
 	"github.com/bluenviron/gomavlib/v3/pkg/dialects/common"
@@ -42,22 +43,70 @@ func (c *Client) SendGoto(req GotoRequest) error {
 	return nil
 }
 
-// PreflightGoto checks whether INAV is ready to accept a goto command.
-func PreflightGoto(state VehicleState) error {
+const defaultMaxHDOP = 2.0
+
+// GotoPreflightOptions configures goto/hover preflight checks.
+type GotoPreflightOptions struct {
+	Force   bool
+	MaxHDOP float32
+}
+
+// GotoPreflightResult holds non-fatal warnings from preflight checks.
+type GotoPreflightResult struct {
+	Warnings []string
+}
+
+// CheckGotoPreflight validates vehicle state before sending goto/hover.
+// Hard failures return an error. HDOP above MaxHDOP blocks unless Force is set.
+func CheckGotoPreflight(state VehicleState, opts GotoPreflightOptions) (GotoPreflightResult, error) {
+	maxHDOP := opts.MaxHDOP
+	if maxHDOP <= 0 {
+		maxHDOP = defaultMaxHDOP
+	}
+
 	if !state.Connected {
-		return fmt.Errorf("not connected to flight controller")
+		return GotoPreflightResult{}, fmt.Errorf("not connected to flight controller")
 	}
 	if !state.Armed {
-		return fmt.Errorf("vehicle is not armed")
+		return GotoPreflightResult{}, fmt.Errorf("vehicle is not armed")
 	}
 	if state.GPS.FixType < 3 {
-		return fmt.Errorf("GPS 3D fix required (current fix type: %d)", state.GPS.FixType)
+		return GotoPreflightResult{}, fmt.Errorf("GPS 3D fix required (current fix type: %d)", state.GPS.FixType)
 	}
 	if state.GPS.Satellites < 6 {
-		return fmt.Errorf("insufficient satellites: %d (need >= 6)", state.GPS.Satellites)
+		return GotoPreflightResult{}, fmt.Errorf("insufficient satellites: %d (need >= 6)", state.GPS.Satellites)
 	}
 	if !state.GCSNavActive {
-		return fmt.Errorf("GCS NAV mode is not active; enable GCS NAV on the transmitter before goto")
+		if state.Mode == ModePosHold {
+			return GotoPreflightResult{}, fmt.Errorf(
+				"GCS NAV is not active; enable the GCS NAV switch while in POS HOLD",
+			)
+		}
+		return GotoPreflightResult{}, fmt.Errorf(
+			"GCS NAV mode is not active (current mode: %s); enable GCS NAV on the transmitter",
+			state.Mode,
+		)
 	}
-	return nil
+
+	var result GotoPreflightResult
+	if state.GPS.HDOP > maxHDOP {
+		msg := fmt.Sprintf("HDOP %.1f exceeds %.1f", state.GPS.HDOP, maxHDOP)
+		if !opts.Force {
+			return result, fmt.Errorf("%s; use --force to proceed anyway", msg)
+		}
+		result.Warnings = append(result.Warnings, msg+" (forced)")
+	}
+
+	return result, nil
+}
+
+// PreflightGoto checks whether INAV is ready to accept a goto command.
+func PreflightGoto(state VehicleState) error {
+	_, err := CheckGotoPreflight(state, GotoPreflightOptions{})
+	return err
+}
+
+// FormatWarnings joins preflight warnings for stderr output.
+func FormatWarnings(warnings []string) string {
+	return strings.Join(warnings, "; ")
 }

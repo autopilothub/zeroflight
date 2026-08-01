@@ -89,3 +89,15 @@ func applySysStatus(state *VehicleState, msg *ardupilotmega.MessageSysStatus) {
 func sensorPresent(present, enabled, flag ardupilotmega.MAV_SYS_STATUS_SENSOR) bool {
 	return present&flag != 0 && enabled&flag != 0
 }
+
+func applyGpsGlobalOrigin(state *VehicleState, msg *ardupilotmega.MessageGpsGlobalOrigin) {
+	now := time.Now()
+	state.Home = HomePosition{
+		Lat:   float64(msg.Latitude) / 1e7,
+		Lon:   float64(msg.Longitude) / 1e7,
+		AltM:  float32(msg.Altitude) / 1000,
+		Valid: true,
+		Time:  now,
+	}
+	state.Time = now
+}

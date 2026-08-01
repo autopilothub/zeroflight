@@ -1,3 +1,4 @@
 /zeroflight
+logs/
 *.log
 .DS_Store

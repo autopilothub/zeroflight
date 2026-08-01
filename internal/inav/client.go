@@ -23,10 +23,10 @@ type Config struct {
 	MAVLinkVersion   gomavlib.Version
 }
 
-// DefaultConfig returns settings suited for Mamba F405 MK2 + INAV on UART3.
+// DefaultConfig returns settings suited for Mamba F405 MK2 + INAV on UART6.
 func DefaultConfig() Config {
 	return Config{
-		Device:            "/dev/ttyAMA0",
+		Device:            "/dev/serial0",
 		Baud:              115200,
 		TargetSystemID:    1,
 		TargetComponentID: 1,
@@ -40,9 +40,10 @@ func DefaultConfig() Config {
 type Client struct {
 	cfg Config
 
-	mu      sync.RWMutex
-	state   VehicleState
-	channel *gomavlib.Channel
+	mu          sync.RWMutex
+	state       VehicleState
+	channel     *gomavlib.Channel
+	missionXfer *missionTransfer
 
 	node *gomavlib.Node
 }
@@ -121,8 +122,11 @@ func (c *Client) handleEvent(evt gomavlib.Event) {
 	case *gomavlib.EventFrame:
 		c.mu.Lock()
 		c.channel = evt.Channel
-		c.applyFrame(evt.Message())
+		channel := evt.Channel
+		msg := evt.Message()
+		c.applyFrame(msg)
 		c.mu.Unlock()
+		c.handleMissionFrame(channel, msg)
 
 	case *gomavlib.EventChannelOpen:
 		c.mu.Lock()
@@ -150,6 +154,8 @@ func (c *Client) applyFrame(msg any) {
 		applyGlobalPosition(&c.state, m)
 	case *ardupilotmega.MessageSysStatus:
 		applySysStatus(&c.state, m)
+	case *ardupilotmega.MessageGpsGlobalOrigin:
+		applyGpsGlobalOrigin(&c.state, m)
 	}
 }
 
@@ -184,7 +190,7 @@ func (c *Client) WaitForConnection(ctx context.Context, timeout time.Duration) e
 	return fmt.Errorf("timed out waiting for INAV telemetry")
 }
 
-// ParseConnection parses "serial:/dev/ttyAMA0:115200" or "udp:127.0.0.1:14550".
+// ParseConnection parses "serial:/dev/serial0:115200" or "udp:127.0.0.1:14550".
 func ParseConnection(raw string, base Config) (Config, error) {
 	cfg := base
 	parts := strings.SplitN(raw, ":", 3)

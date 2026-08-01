@@ -16,8 +16,8 @@ ZeroFlight는 YAML 설정 파일을 사용합니다. 기본 경로는 `configs/i
 
 ```yaml
 mavlink:
-  connection: "serial:/dev/ttyAMA0:115200"
-  device: "/dev/ttyAMA0"
+  connection: "serial:/dev/serial0:115200"
+  device: "/dev/serial0"
   baud: 115200
   target_system_id: 1
   target_component_id: 1
@@ -41,11 +41,11 @@ MAVLink 연결 문자열. CLI `--connection` 으로 덮어쓸 수 있습니다.
 
 | 형식 | 예시 |
 |------|------|
-| 시리얼 | `serial:/dev/ttyAMA0:115200` |
+| 시리얼 | `serial:/dev/serial0:115200` |
 | UDP | `udp:127.0.0.1:14550` |
 
 ```yaml
-connection: "serial:/dev/ttyAMA0:115200"
+connection: "serial:/dev/serial0:115200"
 ```
 
 ### device / baud
@@ -53,7 +53,7 @@ connection: "serial:/dev/ttyAMA0:115200"
 `connection` 이 비어 있을 때 사용하는 시리얼 fallback 값입니다. 일반적으로 `connection` 만 설정하면 충분합니다.
 
 ```yaml
-device: "/dev/ttyAMA0"
+device: "/dev/serial0"
 baud: 115200
 ```
 
@@ -103,7 +103,7 @@ max_altitude_m: 120
 
 ### max_radius_m
 
-홈 포인트 기준 최대 비행 반경 (m). *(향후 geofence 구현 시 사용)*
+홈 포인트(`GPS_GLOBAL_ORIGIN`) 기준 최대 비행 반경 (m). `goto`, `hover`, `mission upload`에 적용됩니다.
 
 ```yaml
 max_radius_m: 500
@@ -111,7 +111,7 @@ max_radius_m: 500
 
 ### arrival_radius_m
 
-`goto --wait` 시 수평 도착 판정 반경 (m).
+`goto --wait` / `hover --wait` 시 수평 도착 판정 반경 (m).
 
 ```yaml
 arrival_radius_m: 3
@@ -119,21 +119,46 @@ arrival_radius_m: 3
 
 ### arrival_altitude_m
 
-`goto --wait` 시 고도 도착 판정 허용 오차 (m).
+`goto --wait` / `hover --wait` 시 고도 도착 판정 허용 오차 (m).
 
 ```yaml
 arrival_altitude_m: 2
 ```
 
+### link_timeout_sec
+
+MAVLink 텔레메트리 갱신 타임아웃 (초). 초과 시 자율 명령 거부 또는 `--wait` 중단.
+
+```yaml
+link_timeout_sec: 3
+```
+
+---
+
+## api 섹션
+
+### listen
+
+HTTP API 바인드 주소. `zeroflight serve` 에서 사용.
+
+```yaml
+api:
+  listen: "127.0.0.1:8080"
+```
+
+LAN에서 접근하려면 `0.0.0.0:8080` (방화벽 주의).
+
+---
+
 ---
 
 ## 환경별 설정 예시
 
-### Raspberry Pi + UART3 (실기)
+### Raspberry Pi + UART6 (실기)
 
 ```yaml
 mavlink:
-  connection: "serial:/dev/ttyAMA0:115200"
+  connection: "serial:/dev/serial0:115200"
 ```
 
 ### USB 시리얼 디버그
@@ -162,7 +187,7 @@ mavlink:
 
 ```bash
 # 설정 파일 무시하고 시리얼 지정
-./zeroflight --connection serial:/dev/ttyAMA0:115200 status
+./zeroflight --connection serial:/dev/serial0:115200 status
 
 # 설정 파일의 connection 사용
 ./zeroflight status

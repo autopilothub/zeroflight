@@ -7,6 +7,8 @@ Mamba F405 MK2 + INAV + Raspberry Pi 기반 자율 드론 companion 앱 문서�
 | [사용법](usage.md) | 설치, 설정, CLI 명령, 비행 절차 |
 | [하드웨어 설정](hardware.md) | 배선, INAV 포트/CLI 설정 |
 | [설정 파일](configuration.md) | `configs/inav.yaml` 항목 설명 |
+| [AI-DLC 방법론](aidlc.md) | AWS AI-DLC 개발 워크플로우 |
+| [배포](deployment.md) | RPi 설치, systemd, REST API |
 
 ## 빠른 시작
 

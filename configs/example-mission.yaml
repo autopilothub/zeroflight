@@ -1,0 +1,11 @@
+# Example mission — edit coordinates for your field
+waypoints:
+  - lat: 37.5665000
+    lon: 126.9780000
+    alt: 15
+  - lat: 37.5668000
+    lon: 126.9783000
+    alt: 15
+  - lat: 37.5671000
+    lon: 126.9780000
+    alt: 15

@@ -20,22 +20,22 @@ Mamba F405 MK2 + INAV + Raspberry Pi 연결 가이드입니다.
 |------|------|-----------|------------|
 | UART0 | USB | Configurator | 개발용 |
 | UART1 | SBUS / TX1 | RC 수신기 | RC 전용 (MAVLink 사용 안 함) |
-| UART3 | TX3 / RX3 | VTX 등 | **RPi MAVLink 연결** |
-| UART6 | TX6 / RX6 | ESC 텔레메트리 | (미사용 시 대안) |
+| UART3 | TX3 / RX3 | VTX 등 | (미사용) |
+| UART6 | TX6 / RX6 | ESC 텔레메트리 / **RPi** | **RPi MAVLink 연결** |
 
-RC 수신기는 UART1에 두고, RPi는 **UART3** 에 연결하는 구성을 권장합니다.
+RC 수신기는 UART1에 두고, RPi는 **UART6** 에 연결합니다.
 
 ---
 
 ## 배선
 
-### RPi ↔ FC (UART3)
+### RPi ↔ FC (UART6)
 
 ```
 Raspberry Pi          Mamba F405 MK2
 ─────────────         ───────────────
-GPIO14 (TXD)    →     RX3
-GPIO15 (RXD)    ←     TX3
+GPIO14 (TXD)    →     RX6
+GPIO15 (RXD)    ←     TX6
 GND             ─     GND
 ```
 
@@ -74,13 +74,12 @@ sudo raspi-config
 
 ```bash
 ls -l /dev/serial0
-# /dev/serial0 -> ttyAMA0
 ```
 
 ZeroFlight 기본 연결:
 
 ```yaml
-connection: "serial:/dev/ttyAMA0:115200"
+connection: "serial:/dev/serial0:115200"
 ```
 
 USB 시리얼 어댑터를 쓰는 경우 `/dev/ttyUSB0` 등으로 변경합니다.
@@ -94,9 +93,11 @@ USB 시리얼 어댑터를 쓰는 경우 `/dev/ttyUSB0` 등으로 변경합니�
 | UART | Serial RX | Telemetry | MSP | MAVLink | Baud |
 |------|-----------|-----------|-----|---------|------|
 | UART1 | ON (RC) | (RX에 따라) | OFF | OFF | 115200 |
-| UART3 | OFF | OFF | OFF | **ON** | **115200** |
+| UART6 | OFF | OFF | OFF | **ON** | **115200** |
 
 **Save and Reboot** 후 적용합니다.
+
+> UART6은 보드마다 ESC 텔레메트리용으로 쓰이기도 합니다. 본 프로젝트에서는 RPi MAVLink 전용으로 사용합니다.
 
 ### Modes 탭
 
@@ -162,7 +163,7 @@ Configurator **Failsafe** 탭:
 | FrSky FPort | TX1 pad, halfduplex 설정 |
 | SBUS | SBUS pad (단방향) |
 
-RC 설정은 MAVLink 포트(UART3)와 **분리**하는 것이 안정적입니다.
+RC 설정은 MAVLink 포트(UART6)와 **분리**하는 것이 안정적입니다.
 
 ---
 
@@ -170,8 +171,8 @@ RC 설정은 MAVLink 포트(UART3)와 **분리**하는 것이 안정적입니다
 
 배선·설정 완료 후:
 
-- [ ] UART3 MAVLink ON, 115200 baud
-- [ ] RPi `/dev/ttyAMA0` 접근 가능
+- [ ] UART6 MAVLink ON, 115200 baud
+- [ ] RPi `/dev/serial0` 접근 가능
 - [ ] GPS 3D fix (야외)
 - [ ] Compass 캘리브레이션 완료
 - [ ] GCS NAV 스위치 할당

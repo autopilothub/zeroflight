@@ -63,6 +63,15 @@ type SensorHealth struct {
 	Time     time.Time
 }
 
+// HomePosition is the INAV home / arming point from GPS_GLOBAL_ORIGIN.
+type HomePosition struct {
+	Lat   float64
+	Lon   float64
+	AltM  float32
+	Valid bool
+	Time  time.Time
+}
+
 // VehicleState is the latest aggregated telemetry snapshot.
 type VehicleState struct {
 	Time         time.Time
@@ -74,6 +83,7 @@ type VehicleState struct {
 	GPS          GPSFix
 	Battery      Battery
 	Sensors      SensorHealth
+	Home         HomePosition
 }
 
 // GotoRequest is a target position for MAV_CMD_DO_REPOSITION.

@@ -1,7 +1,7 @@
 mavlink:
-  # serial:/dev/ttyAMA0:115200  or  udp:127.0.0.1:14550
-  connection: "serial:/dev/ttyAMA0:115200"
-  device: "/dev/ttyAMA0"
+  # serial:/dev/serial0:115200  or  udp:127.0.0.1:14550
+  connection: "serial:/dev/serial0:115200"
+  device: "/dev/serial0"
   baud: 115200
   target_system_id: 1
   target_component_id: 1
@@ -13,3 +13,7 @@ safety:
   max_radius_m: 500
   arrival_radius_m: 3
   arrival_altitude_m: 2
+  link_timeout_sec: 3
+
+api:
+  listen: "127.0.0.1:8080"

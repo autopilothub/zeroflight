@@ -1,0 +1,42 @@
+---
+description: AWS AI-DLC (AI-Driven Development Life Cycle) workflow for ZeroFlight
+alwaysApply: true
+---
+
+# AI-DLC Workflow — ZeroFlight
+
+When the user invokes AI-DLC, starts a new bolt/unit, or requests gated software development, read and follow:
+
+`.aidlc-rule-details/` (resolved from project root)
+
+Start with `common/process-overview.md` and `aidlc-docs/aidlc-state.md`.
+
+## Project-specific context (always load)
+
+- Vision: `aidlc-docs/inception/vision.md`
+- Technical environment: `aidlc-docs/inception/technical-environment.md`
+- Requirements: `aidlc-docs/inception/requirements.md`
+- Units of work: `aidlc-docs/inception/units-of-work.md`
+
+## ZeroFlight constraints
+
+- Language: Go 1.25+
+- Target: Raspberry Pi companion + Mamba F405 MK2 + INAV
+- Protocol: MAVLink v2 (primary); MSP optional later
+- Serial: `/dev/serial0` on UART6 (TX6/RX6)
+- Safety: FC owns attitude/motor control; RPi owns mission/goto logic
+- INAV MAVLink is partial — do not assume ArduPilot/PX4 APIs
+
+## Gate rules
+
+1. Write clarifying questions to `aidlc-docs/**/questions.md`, not inline chat only
+2. Update `aidlc-docs/aidlc-state.md` after each approved gate
+3. Application code lives in repo root (`cmd/`, `internal/`, `pkg/`) — never under `aidlc-docs/`
+4. Human approval required before Construction code generation for new units
+
+## Resume prompt
+
+```
+Go to aidlc-docs/aidlc-state.md, find the first unchecked item,
+then go to the corresponding plan file and resume from that point.
+```
