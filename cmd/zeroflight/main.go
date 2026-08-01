@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/autopilothub/zeroflight/internal/config"
 	"github.com/autopilothub/zeroflight/internal/inav"
 	"github.com/autopilothub/zeroflight/internal/safety"
+	"github.com/autopilothub/zeroflight/internal/session"
 	"github.com/autopilothub/zeroflight/pkg/geo"
 	"github.com/spf13/cobra"
 )
@@ -37,28 +37,16 @@ func main() {
 	root.AddCommand(newPreflightCmd())
 	root.AddCommand(newLogCmd())
 	root.AddCommand(newServeCmd())
+	root.AddCommand(newImuCmd())
+	root.AddCommand(newOrbitCmd())
 
 	if err := root.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
-func loadClient(ctx context.Context) (*inav.Client, config.File, error) {
-	fileCfg, err := config.Load(cfgPath)
-	if err != nil {
-		return nil, fileCfg, err
-	}
-
-	clientCfg, err := fileCfg.INAVConfig(connection)
-	if err != nil {
-		return nil, fileCfg, err
-	}
-
-	client := inav.NewClient(clientCfg)
-	if err := client.Connect(ctx); err != nil {
-		return nil, fileCfg, fmt.Errorf("connect: %w", err)
-	}
-	return client, fileCfg, nil
+func loadSession(ctx context.Context) (*session.Session, error) {
+	return session.Open(ctx, cfgPath, connection)
 }
 
 func newStatusCmd() *cobra.Command {
@@ -72,20 +60,20 @@ func newStatusCmd() *cobra.Command {
 			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			defer cancel()
 
-			client, _, err := loadClient(ctx)
+			sess, err := loadSession(ctx)
 			if err != nil {
 				return err
 			}
-			defer client.Close()
+			defer sess.Close()
 
-			if err := client.WaitForConnection(ctx, 10*time.Second); err != nil {
+			if err := sess.WaitReady(ctx); err != nil {
 				return err
 			}
 
 			ticker := time.NewTicker(interval)
 			defer ticker.Stop()
 
-			printStatus(client.State())
+			printStatus(sess.State())
 			if once {
 				return nil
 			}
@@ -95,7 +83,7 @@ func newStatusCmd() *cobra.Command {
 				case <-ctx.Done():
 					return nil
 				case <-ticker.C:
-					printStatus(client.State())
+					printStatus(sess.State())
 				}
 			}
 		},
@@ -146,6 +134,15 @@ func printStatus(state inav.VehicleState) {
 	} else {
 		fmt.Printf("  (waiting for GPS_GLOBAL_ORIGIN)\n")
 	}
+
+	fmt.Printf("\nRaw IMU (MSP)\n")
+	if state.RawIMU.Available {
+		fmt.Printf("  accel: %v  gyro: %v  mag: %v\n",
+			state.RawIMU.Accel, state.RawIMU.Gyro, state.RawIMU.Mag)
+		fmt.Printf("  updated %s\n", state.RawIMU.Time.Format("15:04:05"))
+	} else {
+		fmt.Printf("  (enable msp in config for raw IMU)\n")
+	}
 }
 
 type navCommandOptions struct {
@@ -162,21 +159,16 @@ type navCommandOptions struct {
 	useGPSAlt bool
 }
 
-func runNavCommand(opts navCommandOptions) error {
+func runNavCommand(sess *session.Session, opts navCommandOptions) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	client, fileCfg, err := loadClient(ctx)
-	if err != nil {
-		return err
-	}
-	defer client.Close()
-
-	if err := client.WaitForConnection(ctx, 10*time.Second); err != nil {
+	if err := sess.WaitReady(ctx); err != nil {
 		return err
 	}
 
-	state := client.State()
+	fileCfg := sess.Config()
+	state := sess.State()
 	if safety.IsLinkStale(state, fileCfg.LinkTimeout()) {
 		return fmt.Errorf("mavlink link stale; last telemetry %s ago", time.Since(state.Time).Round(time.Second))
 	}
@@ -218,7 +210,7 @@ func runNavCommand(opts navCommandOptions) error {
 		req.YawDeg = &opts.yaw
 	}
 
-	if err := client.SendGoto(req); err != nil {
+	if err := sess.Client().SendGoto(req); err != nil {
 		return err
 	}
 
@@ -252,7 +244,7 @@ func runNavCommand(opts navCommandOptions) error {
 		case <-time.After(500 * time.Millisecond):
 		}
 
-		cur := client.State()
+		cur := sess.State()
 		if safety.IsLinkStale(cur, fileCfg.LinkTimeout()) {
 			return fmt.Errorf("mavlink link lost during %s", opts.command)
 		}
@@ -280,6 +272,15 @@ func newGotoCmd() *cobra.Command {
 		Use:   "goto",
 		Short: "Send MAV_CMD_DO_REPOSITION (requires GCS NAV mode)",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			defer cancel()
+
+			sess, err := loadSession(ctx)
+			if err != nil {
+				return err
+			}
+			defer sess.Close()
+
 			opts.lat = gotoLat
 			opts.lon = gotoLon
 			opts.alt = gotoAlt
@@ -289,7 +290,7 @@ func newGotoCmd() *cobra.Command {
 			opts.timeout = gotoTimeout
 			opts.force = gotoForce
 			opts.logPath = gotoLogPath
-			return runNavCommand(opts)
+			return runNavCommand(sess, opts)
 		},
 	}
 
@@ -314,12 +315,21 @@ func newHoverCmd() *cobra.Command {
 		Use:   "hover",
 		Short: "Hold current GPS position (optional altitude change)",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+			defer cancel()
+
+			sess, err := loadSession(ctx)
+			if err != nil {
+				return err
+			}
+			defer sess.Close()
+
 			opts.alt = hoverAlt
 			opts.wait = hoverWait
 			opts.timeout = hoverTimeout
 			opts.force = hoverForce
 			opts.logPath = hoverLogPath
-			return runNavCommand(opts)
+			return runNavCommand(sess, opts)
 		},
 	}
 

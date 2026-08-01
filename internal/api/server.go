@@ -179,6 +179,7 @@ type vehicleJSON struct {
 	Battery      batteryJSON    `json:"battery"`
 	Sensors      sensorsJSON    `json:"sensors"`
 	Home         homeJSON       `json:"home"`
+	RawIMU       rawIMUJSON     `json:"raw_imu"`
 }
 
 type attitudeJSON struct {
@@ -224,6 +225,14 @@ type homeJSON struct {
 	AltM  float32 `json:"alt_m"`
 }
 
+type rawIMUJSON struct {
+	Available bool      `json:"available"`
+	Time      time.Time `json:"time"`
+	Accel     [3]int16  `json:"accel"`
+	Gyro      [3]int16  `json:"gyro"`
+	Mag       [3]int16  `json:"mag"`
+}
+
 func toVehicleJSON(state inav.VehicleState) vehicleJSON {
 	return vehicleJSON{
 		Time:         state.Time,
@@ -249,6 +258,13 @@ func toVehicleJSON(state inav.VehicleState) vehicleJSON {
 		},
 		Home: homeJSON{
 			Valid: state.Home.Valid, Lat: state.Home.Lat, Lon: state.Home.Lon, AltM: state.Home.AltM,
+		},
+		RawIMU: rawIMUJSON{
+			Available: state.RawIMU.Available,
+			Time:      state.RawIMU.Time,
+			Accel:     state.RawIMU.Accel,
+			Gyro:      state.RawIMU.Gyro,
+			Mag:       state.RawIMU.Mag,
 		},
 	}
 }

@@ -14,6 +14,15 @@ type File struct {
 	MAVLink MAVLink `yaml:"mavlink"`
 	Safety  Safety  `yaml:"safety"`
 	API     API     `yaml:"api"`
+	MSP     MSP     `yaml:"msp"`
+}
+
+// MSP holds optional MSP serial settings for raw IMU.
+type MSP struct {
+	Enabled bool   `yaml:"enabled"`
+	Device  string `yaml:"device"`
+	Baud    int    `yaml:"baud"`
+	PollHz  int    `yaml:"poll_hz"`
 }
 
 // API holds HTTP server settings.
@@ -62,6 +71,12 @@ func Default() File {
 		},
 		API: API{
 			Listen: "127.0.0.1:8080",
+		},
+		MSP: MSP{
+			Enabled: false,
+			Device:  "/dev/ttyUSB0",
+			Baud:    115200,
+			PollHz:  10,
 		},
 	}
 }

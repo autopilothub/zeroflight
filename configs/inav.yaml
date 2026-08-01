@@ -17,3 +17,10 @@ safety:
 
 api:
   listen: "127.0.0.1:8080"
+
+# Optional second UART for MSP raw IMU (UART6 is used for MAVLink).
+msp:
+  enabled: false
+  device: "/dev/ttyUSB0"
+  baud: 115200
+  poll_hz: 10

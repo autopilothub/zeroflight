@@ -150,6 +150,27 @@ LAN에서 접근하려면 `0.0.0.0:8080` (방화벽 주의).
 
 ---
 
+## msp 섹션
+
+MAVLink(UART6)와 별도 UART에서 MSP `RAW_IMU`를 폴링합니다. `zeroflight imu` 및 `status`의 Raw IMU 섹션에 사용됩니다.
+
+```yaml
+msp:
+  enabled: false
+  device: "/dev/ttyUSB0"
+  baud: 115200
+  poll_hz: 10
+```
+
+| 항목 | 설명 |
+|------|------|
+| `enabled` | `true`이면 시작 시 MSP 시리얼 연결 및 백그라운드 폴링 |
+| `device` | MSP UART 장치 경로 (UART6은 MAVLink 전용) |
+| `baud` | 시리얼 속도 (INAV Ports 탭과 일치) |
+| `poll_hz` | RAW_IMU 요청 주기 (Hz) |
+
+INAV Configurator → **Ports** 에서 해당 UART에 **MSP** 를 활성화하세요.
+
 ---
 
 ## 환경별 설정 예시

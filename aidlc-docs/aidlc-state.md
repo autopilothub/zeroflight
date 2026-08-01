@@ -5,7 +5,7 @@
 **Project:** ZeroFlight  
 **Methodology:** [AWS AI-DLC](https://aws.amazon.com/blogs/devops/ai-driven-development-life-cycle/)  
 **Profile:** Brownfield (Phase 1 code exists)  
-**Last updated:** 2026-08-01
+**Last updated:** 2026-08-01 (UoW-06, UoW-07)
 
 ---
 
@@ -14,7 +14,7 @@
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Inception | ✅ Complete | Retroactive documentation from planning + Phase 1 |
-| Construction | ✅ Complete | UoW-01..05 done |
+| Construction | 🔄 In progress | UoW-06..07 done; UoW-08 backlog |
 | Operations | ✅ Complete | systemd, CI, deployment docs |
 
 ---
@@ -38,6 +38,9 @@
 | UoW-03 | Mission upload & fly | ✅ Done | `construction/uow-03-mission/` | merged | bench test |
 | UoW-04 | Safety & geofence | ✅ Done | `construction/uow-04-safety/` | merged | `go test ./...` |
 | UoW-05 | REST API & deployment | ✅ Done | `construction/uow-05-api/` | merged | `go test ./...` |
+| UoW-06 | MSP RAW_IMU secondary serial | ✅ Done | `construction/uow-06-msp/` | merged | `go test ./...` |
+| UoW-07 | Orbit path generator | ✅ Done | `construction/uow-07-orbit/` | merged | `go test ./...` |
+| UoW-08 | Web GCS dashboard | ⏳ Backlog | — | — | — |
 
 ---
 
@@ -52,7 +55,7 @@
 
 ## Active bolt
 
-MVP complete. Backlog: MSP raw IMU, web GCS dashboard.
+UoW-06 (MSP IMU) and UoW-07 (orbit) complete. Backlog: web GCS dashboard (UoW-08).
 
 ---
 

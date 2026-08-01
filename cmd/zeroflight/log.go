@@ -37,13 +37,13 @@ func newLogTelemetryCmd() *cobra.Command {
 			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			defer cancel()
 
-			client, _, err := loadClient(ctx)
+			sess, err := loadSession(ctx)
 			if err != nil {
 				return err
 			}
-			defer client.Close()
+			defer sess.Close()
 
-			if err := client.WaitForConnection(ctx, 10*time.Second); err != nil {
+			if err := sess.WaitReady(ctx); err != nil {
 				return err
 			}
 
@@ -55,7 +55,7 @@ func newLogTelemetryCmd() *cobra.Command {
 			fmt.Printf("logging telemetry to %s (interval %s)\n", output, interval)
 
 			for {
-				state := client.State()
+				state := sess.State()
 				if err := logger.Write(state); err != nil {
 					return err
 				}

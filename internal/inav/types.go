@@ -72,6 +72,15 @@ type HomePosition struct {
 	Time  time.Time
 }
 
+// RawIMU holds raw accelerometer, gyro, and magnetometer samples (typically from MSP).
+type RawIMU struct {
+	Accel     [3]int16
+	Gyro      [3]int16
+	Mag       [3]int16
+	Available bool
+	Time      time.Time
+}
+
 // VehicleState is the latest aggregated telemetry snapshot.
 type VehicleState struct {
 	Time         time.Time
@@ -84,6 +93,7 @@ type VehicleState struct {
 	Battery      Battery
 	Sensors      SensorHealth
 	Home         HomePosition
+	RawIMU       RawIMU
 }
 
 // GotoRequest is a target position for MAV_CMD_DO_REPOSITION.

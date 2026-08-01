@@ -128,6 +128,9 @@ zeroflight [전역 옵션] <명령> [명령 옵션]
 | `mission` | 웨이포인트 미션 업로드/삭제 |
 | `preflight` | 자율비행 사전 점검 체크리스트 |
 | `log telemetry` | CSV 텔레메트리 기록 |
+| `imu` | MSP RAW_IMU 실시간 표시 (MSP UART 필요) |
+| `orbit` | 원형 경로 순차 goto |
+| `serve` | HTTP REST API 서버 |
 
 도움말:
 
@@ -175,7 +178,8 @@ FC와 연결된 뒤 attitude, GPS, 배터리, 센서 상태를 표시합니다.
 | Attitude | roll, pitch, yaw (rad) 및 각속도 |
 | GPS | 위경도, 고도, fix, 위성 수, HDOP, 속도 |
 | Battery | 전압, 전류, 잔량 |
-| Sensors | gyro/accel/mag/baro/gps/rc 건강 상태 |
+| Home | 홈 위치 (GPS_GLOBAL_ORIGIN) |
+| Raw IMU (MSP) | 가속도/자이로/자기 (MSP 활성화 시) |
 
 ### 정상 연결 확인 체크리스트
 
@@ -304,7 +308,56 @@ altitude 150.0m exceeds max 120.0m
 
 ---
 
-## 5.2 mission — 웨이포인트 미션
+## 5.3 orbit — 원형 경로 비행
+
+현재 GPS 위치(또는 지정 좌표)를 중심으로 원형 웨이포인트를 생성하고, 순차적으로 `goto`를 전송합니다.
+
+```bash
+# 현재 위치 중심, 반경 50m, 8개 웨이포인트, 고도 15m
+./zeroflight orbit --radius 50 --points 8 --alt 15
+
+# 특정 좌표를 중심으로
+./zeroflight orbit --lat 37.5665 --lon 126.9780 --center-here=false --radius 30 --alt 10
+```
+
+| 옵션 | 기본값 | 설명 |
+|------|--------|------|
+| `--lat` / `--lon` | `0` | 궤도 중심 (기본: 현재 GPS) |
+| `--center-here` | `true` | 현재 GPS를 중심으로 사용 |
+| `--radius` | `50` | 반경 (m) |
+| `--points` | `8` | 웨이포인트 개수 |
+| `--alt` | `10` | 목표 상대 고도 (m) |
+| `--wait` | `true` | 각 웨이포인트 도착 대기 |
+| `--timeout` | `2m` | 웨이포인트별 대기 타임아웃 |
+| `--force` | `false` | HDOP 높을 때 강행 |
+
+---
+
+## 5.4 imu — MSP 원시 IMU
+
+INAV MAVLink는 raw IMU를 제공하지 않습니다. 별도 UART에 **MSP**를 활성화하면 `MSP_RAW_IMU`를 폴링합니다.
+
+`configs/inav.yaml`:
+
+```yaml
+msp:
+  enabled: true
+  device: "/dev/ttyUSB0"   # UART3 등 여분 UART
+  baud: 115200
+  poll_hz: 10
+```
+
+INAV Configurator → **Ports** 에서 해당 UART에 **MSP** 를 켭니다 (UART6은 MAVLink용).
+
+```bash
+./zeroflight imu
+./zeroflight imu --once
+./zeroflight imu --interval 50ms
+```
+
+---
+
+## 5.5 mission — 웨이포인트 미션
 
 YAML 파일로 웨이포인트를 INAV에 업로드합니다. **disarmed** 상태에서만 가능합니다.
 
@@ -507,7 +560,8 @@ INAV MAVLink는 **부분 구현**입니다.
 |------|------|
 | Attitude, GPS 텔레메트리 | ✅ |
 | goto (`DO_REPOSITION`) | ✅ (GCS NAV 필요) |
-| Raw IMU (gyro/accel/mag) | ❌ MAVLink 미지원 |
+| Raw IMU (gyro/accel/mag) | ✅ MSP 보조 UART (`zeroflight imu`) |
+| 원형 경로 (`orbit`) | ✅ 순차 goto |
 | 파라미터 원격 튜닝 | ❌ Configurator/CLI만 |
 | MAVLink takeoff/land | ❌ RC로 수행 |
 | 완전한 미션 프로토콜 | ⚠️ 제한적 (향후 Phase) |

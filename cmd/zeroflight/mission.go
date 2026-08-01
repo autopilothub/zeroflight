@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/autopilothub/zeroflight/internal/mission"
 	"github.com/autopilothub/zeroflight/internal/safety"
@@ -38,27 +37,27 @@ func newMissionUploadCmd() *cobra.Command {
 			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			defer cancel()
 
-			client, fileCfg, err := loadClient(ctx)
+			sess, err := loadSession(ctx)
 			if err != nil {
 				return err
 			}
-			defer client.Close()
+			defer sess.Close()
 
-			if err := client.WaitForConnection(ctx, 10*time.Second); err != nil {
+			if err := sess.WaitReady(ctx); err != nil {
 				return err
 			}
-			state := client.State()
+			state := sess.State()
 			if state.Armed {
 				return fmt.Errorf("disarm the vehicle before uploading a mission")
 			}
 
-			limits := safety.LimitsFromConfig(fileCfg.Safety)
+			limits := safety.LimitsFromConfig(sess.Config().Safety)
 			if err := safety.ValidateMission(state.Home, plan.Waypoints, limits); err != nil {
 				return err
 			}
 
 			fmt.Printf("uploading %d waypoints...\n", len(plan.Waypoints))
-			if err := client.UploadMission(ctx, plan.Waypoints); err != nil {
+			if err := sess.Client().UploadMission(ctx, plan.Waypoints); err != nil {
 				return err
 			}
 			fmt.Println("mission uploaded; switch to MISSION mode on the transmitter to fly")
@@ -79,20 +78,20 @@ func newMissionClearCmd() *cobra.Command {
 			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			defer cancel()
 
-			client, _, err := loadClient(ctx)
+			sess, err := loadSession(ctx)
 			if err != nil {
 				return err
 			}
-			defer client.Close()
+			defer sess.Close()
 
-			if err := client.WaitForConnection(ctx, 10*time.Second); err != nil {
+			if err := sess.WaitReady(ctx); err != nil {
 				return err
 			}
-			if client.State().Armed {
+			if sess.State().Armed {
 				return fmt.Errorf("disarm the vehicle before clearing a mission")
 			}
 
-			if err := client.ClearMission(ctx); err != nil {
+			if err := sess.Client().ClearMission(ctx); err != nil {
 				return err
 			}
 			fmt.Println("mission cleared")

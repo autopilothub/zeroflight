@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/autopilothub/zeroflight/internal/safety"
 	"github.com/spf13/cobra"
@@ -22,19 +21,19 @@ func newPreflightCmd() *cobra.Command {
 			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			defer cancel()
 
-			client, fileCfg, err := loadClient(ctx)
+			sess, err := loadSession(ctx)
 			if err != nil {
 				return err
 			}
-			defer client.Close()
+			defer sess.Close()
 
-			if err := client.WaitForConnection(ctx, 10*time.Second); err != nil {
+			if err := sess.WaitReady(ctx); err != nil {
 				return err
 			}
 
-			state := client.State()
-			limits := safety.LimitsFromConfig(fileCfg.Safety)
-			results := safety.RunPreflight(state, limits, fileCfg.LinkTimeout())
+			state := sess.State()
+			limits := safety.LimitsFromConfig(sess.Config().Safety)
+			results := safety.RunPreflight(state, limits, sess.Config().LinkTimeout())
 
 			fmt.Println("ZeroFlight Preflight Checklist")
 			fmt.Println("================================")
