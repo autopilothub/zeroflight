@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZeroFlight GCS</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">ZF</span>
+      <div>
+        <h1>ZeroFlight GCS</h1>
+        <p class="subtitle">INAV companion dashboard</p>
+      </div>
+    </div>
+    <div class="status-pills" id="status-pills">
+      <span class="pill" id="pill-connected">Disconnected</span>
+      <span class="pill" id="pill-armed">Disarmed</span>
+      <span class="pill" id="pill-mode">Mode —</span>
+      <span class="pill" id="pill-gcsnav">GCS NAV off</span>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="panel telemetry">
+      <h2>Telemetry</h2>
+      <div class="metrics">
+        <div class="metric">
+          <label>Battery</label>
+          <strong id="battery">—</strong>
+        </div>
+        <div class="metric">
+          <label>GPS</label>
+          <strong id="gps-fix">—</strong>
+        </div>
+        <div class="metric">
+          <label>Altitude</label>
+          <strong id="altitude">—</strong>
+        </div>
+        <div class="metric">
+          <label>Speed</label>
+          <strong id="speed">—</strong>
+        </div>
+        <div class="metric">
+          <label>HDOP</label>
+          <strong id="hdop">—</strong>
+        </div>
+        <div class="metric">
+          <label>Updated</label>
+          <strong id="updated">—</strong>
+        </div>
+      </div>
+
+      <div class="attitude-wrap">
+        <h3>Attitude</h3>
+        <div class="horizon" id="horizon">
+          <div class="horizon-sky"></div>
+          <div class="horizon-ground"></div>
+          <div class="horizon-crosshair"></div>
+        </div>
+        <div class="attitude-values">
+          <span>Roll <b id="roll">0.0</b>°</span>
+          <span>Pitch <b id="pitch">0.0</b>°</span>
+          <span>Yaw <b id="yaw">0.0</b>°</span>
+        </div>
+      </div>
+
+      <div class="coords">
+        <h3>Position</h3>
+        <p>Lat <code id="lat">—</code></p>
+        <p>Lon <code id="lon">—</code></p>
+        <p>Home <code id="home">—</code></p>
+      </div>
+
+      <div class="imu" id="imu-section" hidden>
+        <h3>Raw IMU (MSP)</h3>
+        <pre id="imu-data">—</pre>
+      </div>
+    </section>
+
+    <section class="panel map-panel">
+      <h2>Map</h2>
+      <svg id="map" viewBox="0 0 400 400" role="img" aria-label="Position map relative to home">
+        <rect width="400" height="400" class="map-bg"></rect>
+        <circle cx="200" cy="200" r="120" class="map-ring"></circle>
+        <circle cx="200" cy="200" r="60" class="map-ring"></circle>
+        <line x1="200" y1="40" x2="200" y2="360" class="map-axis"></line>
+        <line x1="40" y1="200" x2="360" y2="200" class="map-axis"></line>
+        <circle id="home-dot" cx="200" cy="200" r="6" class="home-dot"></circle>
+        <circle id="drone-dot" cx="200" cy="200" r="8" class="drone-dot"></circle>
+        <text x="200" y="24" text-anchor="middle" class="map-label">N</text>
+      </svg>
+      <p class="map-legend">Home (H) and drone (D) relative to geofence rings</p>
+    </section>
+
+    <section class="panel commands">
+      <h2>Commands</h2>
+
+      <div class="preflight-box">
+        <div class="preflight-header">
+          <h3>Preflight</h3>
+          <button type="button" id="btn-preflight" class="btn secondary">Run checks</button>
+        </div>
+        <ul id="preflight-list" class="checklist"></ul>
+      </div>
+
+      <form id="goto-form" class="command-form">
+        <h3>Goto</h3>
+        <label>
+          Latitude
+          <input type="number" id="goto-lat" step="0.0000001" required>
+        </label>
+        <label>
+          Longitude
+          <input type="number" id="goto-lon" step="0.0000001" required>
+        </label>
+        <label>
+          Altitude (m, relative)
+          <input type="number" id="goto-alt" step="0.1" value="10" required>
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" id="goto-force">
+          Force (ignore HDOP)
+        </label>
+        <div class="btn-row">
+          <button type="button" id="btn-use-position" class="btn secondary">Use current GPS</button>
+          <button type="submit" class="btn primary">Send goto</button>
+        </div>
+      </form>
+
+      <div class="command-form">
+        <h3>Hover</h3>
+        <label>
+          Altitude (m, 0 = keep current)
+          <input type="number" id="hover-alt" step="0.1" value="0">
+        </label>
+        <button type="button" id="btn-hover" class="btn primary">Hold position</button>
+      </div>
+
+      <p id="message" class="message" role="status"></p>
+    </section>
+  </main>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>

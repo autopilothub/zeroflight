@@ -8,7 +8,8 @@ Raspberry Pi companion app for autonomous flight with **Mamba F405 MK2** running
 - `goto` / `hover` (GCS NAV + `DO_REPOSITION`)
 - `mission upload` / `clear`
 - Geofence, `preflight`, CSV `log telemetry`
-- REST API (`serve`)
+- REST API + **Web GCS dashboard** (`serve`)
+- MSP raw IMU (`imu`), orbit path (`orbit`)
 
 ## Hardware
 
@@ -96,7 +97,8 @@ curl http://127.0.0.1:8080/api/v1/status
 ```
 cmd/zeroflight/       CLI + serve
 internal/inav/        MAVLink adapter
-internal/api/         REST API
+internal/api/         REST API + dashboard routes
+internal/web/         embedded GCS UI
 internal/service/     long-lived session
 internal/safety/      geofence, preflight
 configs/inav.yaml     settings
@@ -105,7 +107,7 @@ deploy/               systemd unit
 
 ## Limitations
 
-INAV MAVLink is **partial** — no raw IMU over MAVLink, no parameter API. Backlog: MSP raw IMU, web GCS.
+INAV MAVLink is **partial** — no parameter API over MAVLink. Raw IMU via optional MSP UART. Web GCS at `http://<host>:8080/` when running `serve`.
 
 ## Safety
 

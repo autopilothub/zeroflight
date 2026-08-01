@@ -82,6 +82,8 @@ curl -X POST http://127.0.0.1:8080/api/v1/mission/upload \
 ./zeroflight --config configs/inav.yaml serve --listen 127.0.0.1:8080
 ```
 
+브라우저에서 `http://127.0.0.1:8080/` 로 Web GCS 대시보드에 접속합니다. LAN 접근 시 `--listen 0.0.0.0:8080` (방화벽 주의).
+
 ## 관련 문서
 
 - [사용법](usage.md)

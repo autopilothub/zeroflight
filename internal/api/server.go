@@ -13,6 +13,7 @@ import (
 	"github.com/autopilothub/zeroflight/internal/mission"
 	"github.com/autopilothub/zeroflight/internal/safety"
 	"github.com/autopilothub/zeroflight/internal/service"
+	"github.com/autopilothub/zeroflight/internal/web"
 )
 
 // Controller is the API surface used by HTTP handlers.
@@ -50,6 +51,9 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /api/v1/hover", s.handleHover)
 	s.mux.HandleFunc("POST /api/v1/mission/upload", s.handleMissionUpload)
 	s.mux.HandleFunc("POST /api/v1/mission/clear", s.handleMissionClear)
+	if err := web.Register(s.mux); err != nil {
+		panic(err)
+	}
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {

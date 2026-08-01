@@ -72,3 +72,31 @@ func TestGotoEndpoint(t *testing.T) {
 		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestDashboardIndex(t *testing.T) {
+	srv := api.NewServer(&stubController{})
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "ZeroFlight GCS") {
+		t.Fatalf("expected dashboard HTML")
+	}
+}
+
+func TestDashboardAssets(t *testing.T) {
+	srv := api.NewServer(&stubController{})
+	req := httptest.NewRequest(http.MethodGet, "/assets/app.js", nil)
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "pollStatus") {
+		t.Fatalf("expected app.js content")
+	}
+}

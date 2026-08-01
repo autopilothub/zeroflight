@@ -5,7 +5,7 @@
 **Project:** ZeroFlight  
 **Methodology:** [AWS AI-DLC](https://aws.amazon.com/blogs/devops/ai-driven-development-life-cycle/)  
 **Profile:** Brownfield (Phase 1 code exists)  
-**Last updated:** 2026-08-01 (UoW-06, UoW-07)
+**Last updated:** 2026-08-01 (UoW-08)
 
 ---
 
@@ -14,7 +14,7 @@
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Inception | ✅ Complete | Retroactive documentation from planning + Phase 1 |
-| Construction | 🔄 In progress | UoW-06..07 done; UoW-08 backlog |
+| Construction | ✅ Complete | UoW-01..08 done |
 | Operations | ✅ Complete | systemd, CI, deployment docs |
 
 ---
@@ -40,7 +40,7 @@
 | UoW-05 | REST API & deployment | ✅ Done | `construction/uow-05-api/` | merged | `go test ./...` |
 | UoW-06 | MSP RAW_IMU secondary serial | ✅ Done | `construction/uow-06-msp/` | merged | `go test ./...` |
 | UoW-07 | Orbit path generator | ✅ Done | `construction/uow-07-orbit/` | merged | `go test ./...` |
-| UoW-08 | Web GCS dashboard | ⏳ Backlog | — | — | — |
+| UoW-08 | Web GCS dashboard | ✅ Done | `construction/uow-08-dashboard/` | merged | `go test ./...` |
 
 ---
 
@@ -55,7 +55,7 @@
 
 ## Active bolt
 
-UoW-06 (MSP IMU) and UoW-07 (orbit) complete. Backlog: web GCS dashboard (UoW-08).
+Construction complete (UoW-01..08). Next: field testing on RPi + INAV hardware.
 
 ---
 

@@ -430,14 +430,29 @@ goto/mission 전에 연결·GPS·GCS NAV·geofence를 한 번에 확인합니다
 
 ---
 
-## 6. serve — HTTP API
+## 6. serve — HTTP API & Web GCS
 
-MAVLink 연결을 유지한 채 REST API를 제공합니다.
+MAVLink 연결을 유지한 채 REST API와 **웹 GCS 대시보드**를 제공합니다.
 
 ```bash
 ./zeroflight serve
 ./zeroflight serve --listen 0.0.0.0:8080
 ```
+
+브라우저에서 `http://127.0.0.1:8080/` (또는 `--listen` 주소)로 접속합니다.
+
+### Web GCS 대시보드 (`/`)
+
+| 기능 | 설명 |
+|------|------|
+| 텔레메트리 | 1초마다 status 폴링 (배터리, GPS, attitude) |
+| 지도 | 홈 기준 상대 위치 SVG |
+| Preflight | 체크리스트 실행 |
+| Goto / Hover | 폼에서 명령 전송 |
+
+외부 CDN 없이 동작하므로 필드에서도 RPi 로컬 네트워크로 사용할 수 있습니다.
+
+### REST API
 
 | Method | Path | 설명 |
 |--------|------|------|
@@ -453,16 +468,16 @@ RPi 배포는 [deployment.md](deployment.md) 참고.
 
 ---
 
-## 6. 비행 절차 예시
+## 7. 비행 절차 예시
 
-### 6.1 벤치 테스트 (프로펠러 제거)
+### 7.1 벤치 테스트 (프로펠러 제거)
 
 1. FC에 INAV 플래시, UART6 MAVLink 설정
 2. RPi 배선 후 전원 인가
 3. `./zeroflight status --once` 로 연결 확인
 4. 야외 또는 창가에서 GPS fix 확인
 
-### 6.2 첫 goto 비행
+### 7.2 첫 goto 비행
 
 1. **사전 점검:** 나침반·가속도계 캘리브레이션, failsafe(RTH) 설정
 2. 이륙 후 **POS HOLD** 로 안정 호버
@@ -476,7 +491,7 @@ RPi 배포는 [deployment.md](deployment.md) 참고.
 
 6. 이상 시 RC로 GCS NAV OFF 또는 RTH
 
-### 6.3 권장 비행 순서
+### 7.3 권장 비행 순서
 
 ```text
 지상 점검 → 이륙(수동) → POS HOLD → GCS NAV ON → goto → 호버 → GCS NAV OFF → 착륙(수동)
@@ -484,7 +499,7 @@ RPi 배포는 [deployment.md](deployment.md) 참고.
 
 ---
 
-## 7. 문제 해결
+## 8. 문제 해결
 
 ### `timed out waiting for INAV telemetry`
 
@@ -521,7 +536,7 @@ RPi 배포는 [deployment.md](deployment.md) 참고.
 
 ---
 
-## 8. systemd 서비스 (선택)
+## 9. systemd 서비스 (선택)
 
 부팅 시 자동 실행 예시 `/etc/systemd/system/zeroflight.service`:
 
@@ -552,7 +567,7 @@ sudo systemctl start zeroflight
 
 ---
 
-## 9. 제한 사항
+## 10. 제한 사항
 
 INAV MAVLink는 **부분 구현**입니다.
 
@@ -568,7 +583,7 @@ INAV MAVLink는 **부분 구현**입니다.
 
 ---
 
-## 10. 관련 문서
+## 11. 관련 문서
 
 - [하드웨어 설정](hardware.md)
 - [설정 파일](configuration.md)

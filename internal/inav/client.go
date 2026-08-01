@@ -45,7 +45,9 @@ type Client struct {
 	channel     *gomavlib.Channel
 	missionXfer *missionTransfer
 
-	node *gomavlib.Node
+	node      *gomavlib.Node
+	closeOnce sync.Once
+	done      chan struct{}
 }
 
 // NewClient creates an INAV MAVLink client.
@@ -72,6 +74,7 @@ func (c *Client) Connect(ctx context.Context) error {
 	}
 
 	c.node = node
+	c.done = make(chan struct{})
 	go c.run(ctx)
 	return nil
 }
@@ -98,11 +101,8 @@ func (c *Client) buildEndpoints() ([]gomavlib.EndpointConf, error) {
 }
 
 func (c *Client) run(ctx context.Context) {
-	defer func() {
-		if c.node != nil {
-			c.node.Close()
-		}
-	}()
+	defer close(c.done)
+	defer c.closeNode()
 
 	for {
 		select {
@@ -115,6 +115,15 @@ func (c *Client) run(ctx context.Context) {
 			c.handleEvent(evt)
 		}
 	}
+}
+
+func (c *Client) closeNode() {
+	c.closeOnce.Do(func() {
+		if c.node != nil {
+			c.node.Close()
+			c.node = nil
+		}
+	})
 }
 
 func (c *Client) handleEvent(evt gomavlib.Event) {
@@ -166,11 +175,12 @@ func (c *Client) State() VehicleState {
 	return c.state
 }
 
-// Close shuts down the MAVLink node.
+// Close waits for the event loop to exit and shuts down the MAVLink node once.
 func (c *Client) Close() {
-	if c.node != nil {
-		c.node.Close()
+	if c.done != nil {
+		<-c.done
 	}
+	c.closeNode()
 }
 
 // WaitForConnection blocks until telemetry is received or the context is canceled.

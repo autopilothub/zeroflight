@@ -50,6 +50,7 @@ func newServeCmd() *cobra.Command {
 			}()
 
 			fmt.Printf("ZeroFlight API listening on http://%s\n", addr)
+			fmt.Printf("ZeroFlight GCS dashboard: http://%s/\n", addr)
 			fmt.Println("  GET  /health")
 			fmt.Println("  GET  /api/v1/status")
 			fmt.Println("  GET  /api/v1/preflight")

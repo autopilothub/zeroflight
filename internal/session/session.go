@@ -3,6 +3,7 @@ package session
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/autopilothub/zeroflight/internal/config"
@@ -16,6 +17,8 @@ type Session struct {
 	client *inav.Client
 	msp    *msp.Poller
 	cancel context.CancelFunc
+
+	closeOnce sync.Once
 }
 
 // Open connects MAVLink and optionally starts an MSP poller.
@@ -62,8 +65,14 @@ func Open(ctx context.Context, cfgPath, connectionOverride string) (*Session, er
 
 // Close shuts down background workers and connections.
 func (s *Session) Close() {
-	s.cancel()
-	s.client.Close()
+	s.closeOnce.Do(func() {
+		if s.cancel != nil {
+			s.cancel()
+		}
+		if s.client != nil {
+			s.client.Close()
+		}
+	})
 }
 
 // Config returns loaded configuration.
