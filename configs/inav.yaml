@@ -1,0 +1,15 @@
+mavlink:
+  # serial:/dev/ttyAMA0:115200  or  udp:127.0.0.1:14550
+  connection: "serial:/dev/ttyAMA0:115200"
+  device: "/dev/ttyAMA0"
+  baud: 115200
+  target_system_id: 1
+  target_component_id: 1
+  out_system_id: 255
+  out_component_id: 190
+
+safety:
+  max_altitude_m: 120
+  max_radius_m: 500
+  arrival_radius_m: 3
+  arrival_altitude_m: 2
