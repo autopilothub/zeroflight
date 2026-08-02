@@ -60,7 +60,8 @@ async function api(path, options) {
 function updateStatus(data) {
   state.lastStatus = data;
 
-  setPill(els.pillConnected, data.connected ? 'Connected' : 'Disconnected', data.connected ? 'ok' : 'bad');
+  setPill(els.pillConnected, data.connected ? 'MAVLink active' : (data.link_open ? 'Serial open' : 'Disconnected'),
+    data.connected ? 'ok' : (data.parse_errors > 0 ? 'bad' : 'warn'));
   setPill(els.pillArmed, data.armed ? 'Armed' : 'Disarmed', data.armed ? 'warn' : 'ok');
   setPill(els.pillMode, `Mode ${data.mode || '—'}`, '');
   setPill(

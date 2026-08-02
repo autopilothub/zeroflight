@@ -106,8 +106,23 @@ func printStatus(state inav.VehicleState) {
 
 	fmt.Printf("\033[H\033[J")
 	fmt.Printf("ZeroFlight INAV Telemetry  %s\n", state.Time.Format("15:04:05"))
-	fmt.Printf("Connected: %v  %s  Mode: %s  GCS NAV: %s\n\n",
-		state.Connected, armed, state.Mode, gcsNav)
+	if state.ParseErrors > 0 {
+		fmt.Printf("WARNING: %d parse errors (mavlink mode: check baud / version)\n", state.ParseErrors)
+	}
+	link := "closed"
+	if state.LinkOpen {
+		link = "open"
+	}
+	proto := "waiting for FC"
+	if state.Connected {
+		proto = "active"
+	}
+	mode := string(state.Mode)
+	if mode == "" {
+		mode = "—"
+	}
+	fmt.Printf("Serial: %s  MSP: %s  %s  Mode: %s  GCS NAV: %s\n\n",
+		link, proto, armed, mode, gcsNav)
 
 	fmt.Printf("Attitude (rad)\n")
 	fmt.Printf("  roll=%.3f pitch=%.3f yaw=%.3f\n", state.Attitude.Roll, state.Attitude.Pitch, state.Attitude.Yaw)
@@ -141,7 +156,7 @@ func printStatus(state inav.VehicleState) {
 			state.RawIMU.Accel, state.RawIMU.Gyro, state.RawIMU.Mag)
 		fmt.Printf("  updated %s\n", state.RawIMU.Time.Format("15:04:05"))
 	} else {
-		fmt.Printf("  (enable msp in config for raw IMU)\n")
+		fmt.Printf("  (waiting for MSP_RAW_IMU)\n")
 	}
 }
 
@@ -210,7 +225,7 @@ func runNavCommand(sess *session.Session, opts navCommandOptions) error {
 		req.YawDeg = &opts.yaw
 	}
 
-	if err := sess.Client().SendGoto(req); err != nil {
+	if err := sess.SendGoto(req); err != nil {
 		return err
 	}
 

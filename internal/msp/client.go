@@ -50,18 +50,27 @@ func (c *Client) Close() error {
 	return err
 }
 
+// Request sends an MSP command and returns the response payload.
+func (c *Client) Request(ctx context.Context, cmd uint8, payload []byte) ([]byte, error) {
+	frame, err := c.transact(ctx, cmd, EncodeRequest(cmd, payload))
+	if err != nil {
+		return nil, err
+	}
+	gotCmd, resp, err := ParseResponse(frame)
+	if err != nil {
+		return nil, err
+	}
+	if gotCmd != cmd {
+		return nil, fmt.Errorf("unexpected msp command %d (expected %d)", gotCmd, cmd)
+	}
+	return resp, nil
+}
+
 // RequestRawIMU sends MSP_RAW_IMU and returns parsed sensor data.
 func (c *Client) RequestRawIMU(ctx context.Context) (RawIMU, error) {
-	frame, err := c.transact(ctx, CmdRAWIMU, EncodeRequest(CmdRAWIMU, nil))
+	payload, err := c.Request(ctx, CmdRAWIMU, nil)
 	if err != nil {
 		return RawIMU{}, err
-	}
-	cmd, payload, err := ParseResponse(frame)
-	if err != nil {
-		return RawIMU{}, err
-	}
-	if cmd != CmdRAWIMU {
-		return RawIMU{}, fmt.Errorf("unexpected msp command %d", cmd)
 	}
 	return ParseRawIMU(payload)
 }
@@ -81,8 +90,8 @@ func (c *Client) transact(ctx context.Context, expectCmd uint8, request []byte) 
 	}
 
 	deadline := time.Now().Add(500 * time.Millisecond)
-	buf := make([]byte, 0, 64)
-	tmp := make([]byte, 64)
+	buf := make([]byte, 0, 128)
+	tmp := make([]byte, 128)
 
 	for time.Now().Before(deadline) {
 		select {

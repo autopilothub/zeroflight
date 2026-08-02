@@ -18,7 +18,7 @@ func newImuCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "imu",
-		Short: "Stream raw IMU from MSP (requires msp.enabled in config)",
+		Short: "Stream raw IMU from MSP",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 			defer cancel()
@@ -28,10 +28,6 @@ func newImuCmd() *cobra.Command {
 				return err
 			}
 			defer sess.Close()
-
-			if !sess.Config().MSP.Enabled {
-				return fmt.Errorf("msp is disabled; set msp.enabled: true in %s", cfgPath)
-			}
 
 			if err := sess.WaitReady(ctx); err != nil {
 				return err

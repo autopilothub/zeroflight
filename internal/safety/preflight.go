@@ -19,7 +19,7 @@ type CheckResult struct {
 func RunPreflight(state inav.VehicleState, limits Limits, linkTimeout time.Duration) []CheckResult {
 	var results []CheckResult
 
-	results = append(results, check("MAVLink link", state.Connected && !IsLinkStale(state, linkTimeout),
+	results = append(results, check("FC link", state.Connected && !IsLinkStale(state, linkTimeout),
 		linkMessage(state, linkTimeout)))
 
 	results = append(results, check("Armed", state.Armed, armedMessage(state)))

@@ -74,7 +74,7 @@ type GotoOptions struct {
 func (s *Service) Goto(ctx context.Context, opts GotoOptions) error {
 	state := s.State()
 	if safety.IsLinkStale(state, s.Config().LinkTimeout()) {
-		return fmt.Errorf("mavlink link stale")
+		return fmt.Errorf("msp link stale")
 	}
 
 	preflight, err := inav.CheckGotoPreflight(state, inav.GotoPreflightOptions{Force: opts.Force})
@@ -101,7 +101,7 @@ func (s *Service) Goto(ctx context.Context, opts GotoOptions) error {
 	}
 
 	req := inav.GotoRequest{LatDeg: lat, LonDeg: lon, AltM: alt, YawDeg: opts.Yaw}
-	if err := s.session.Client().SendGoto(req); err != nil {
+	if err := s.session.SendGoto(req); err != nil {
 		return err
 	}
 
@@ -134,7 +134,7 @@ func (s *Service) UploadMission(ctx context.Context, waypoints []mission.Waypoin
 	if err := safety.ValidateMission(state.Home, waypoints, limits); err != nil {
 		return err
 	}
-	return s.session.Client().UploadMission(ctx, waypoints)
+	return s.session.UploadMission(ctx, waypoints)
 }
 
 // ClearMission removes stored mission items when disarmed.
@@ -142,7 +142,7 @@ func (s *Service) ClearMission(ctx context.Context) error {
 	if s.State().Armed {
 		return fmt.Errorf("disarm the vehicle before clearing a mission")
 	}
-	return s.session.Client().ClearMission(ctx)
+	return s.session.ClearMission(ctx)
 }
 
 // WaitArrival blocks until the vehicle reaches a target or times out.
@@ -157,7 +157,7 @@ func (s *Service) WaitArrival(ctx context.Context, lat, lon float64, alt float32
 		}
 		cur := s.State()
 		if safety.IsLinkStale(cur, cfg.LinkTimeout()) {
-			return fmt.Errorf("mavlink link lost during wait")
+			return fmt.Errorf("fc link lost during wait")
 		}
 		if !cur.GCSNavActive {
 			return fmt.Errorf("GCS NAV deactivated during wait")

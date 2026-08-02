@@ -11,6 +11,14 @@ import (
 	"github.com/bluenviron/gomavlib/v3/pkg/dialects/ardupilotmega"
 )
 
+// MAVLinkVersion converts config value (1 or 2) to gomavlib version.
+func MAVLinkVersion(v int) gomavlib.Version {
+	if v == 1 {
+		return gomavlib.V1
+	}
+	return gomavlib.V2
+}
+
 // Config holds MAVLink connection settings for INAV.
 type Config struct {
 	Device           string
@@ -44,6 +52,7 @@ type Client struct {
 	state       VehicleState
 	channel     *gomavlib.Channel
 	missionXfer *missionTransfer
+	streamsOnce sync.Once
 
 	node      *gomavlib.Node
 	closeOnce sync.Once
@@ -63,11 +72,14 @@ func (c *Client) Connect(ctx context.Context) error {
 	}
 
 	node := &gomavlib.Node{
-		Endpoints:       endpoints,
-		Dialect:         ardupilotmega.Dialect,
-		OutVersion:      c.cfg.MAVLinkVersion,
-		OutSystemID:     c.cfg.OutSystemID,
-		OutComponentID:  c.cfg.OutComponentID,
+		Endpoints:              endpoints,
+		Dialect:                ardupilotmega.Dialect,
+		OutVersion:             c.cfg.MAVLinkVersion,
+		OutSystemID:            c.cfg.OutSystemID,
+		OutComponentID:         c.cfg.OutComponentID,
+		HeartbeatPeriod:        time.Second,
+		StreamRequestEnable:    true,
+		StreamRequestFrequency: 10,
 	}
 	if err := node.Initialize(); err != nil {
 		return fmt.Errorf("initialize mavlink node: %w", err)
@@ -133,28 +145,50 @@ func (c *Client) handleEvent(evt gomavlib.Event) {
 		c.channel = evt.Channel
 		channel := evt.Channel
 		msg := evt.Message()
-		c.applyFrame(msg)
-		c.mu.Unlock()
+		if hb, ok := msg.(*ardupilotmega.MessageHeartbeat); ok {
+			applyHeartbeat(&c.state, hb)
+			c.mu.Unlock()
+			c.onHeartbeat(channel)
+		} else {
+			c.applyFrame(msg)
+			c.mu.Unlock()
+		}
 		c.handleMissionFrame(channel, msg)
 
 	case *gomavlib.EventChannelOpen:
 		c.mu.Lock()
-		c.state.Connected = true
+		c.channel = evt.Channel
+		c.state.LinkOpen = true
 		c.state.Time = time.Now()
 		c.mu.Unlock()
 
 	case *gomavlib.EventChannelClose:
 		c.mu.Lock()
+		c.state.LinkOpen = false
 		c.state.Connected = false
+		c.state.Time = time.Now()
+		c.mu.Unlock()
+
+	case *gomavlib.EventParseError:
+		c.mu.Lock()
+		c.state.ParseErrors++
+		c.state.LinkOpen = true
+		if evt.Channel != nil {
+			c.channel = evt.Channel
+		}
 		c.state.Time = time.Now()
 		c.mu.Unlock()
 	}
 }
 
+func (c *Client) onHeartbeat(channel *gomavlib.Channel) {
+	c.streamsOnce.Do(func() {
+		c.requestTelemetryStreams(channel)
+	})
+}
+
 func (c *Client) applyFrame(msg any) {
 	switch m := msg.(type) {
-	case *ardupilotmega.MessageHeartbeat:
-		applyHeartbeat(&c.state, m)
 	case *ardupilotmega.MessageAttitude:
 		applyAttitude(&c.state, m)
 	case *ardupilotmega.MessageGpsRawInt:
@@ -183,12 +217,12 @@ func (c *Client) Close() {
 	c.closeNode()
 }
 
-// WaitForConnection blocks until telemetry is received or the context is canceled.
+// WaitForConnection blocks until an FC HEARTBEAT is received or the context is canceled.
 func (c *Client) WaitForConnection(ctx context.Context, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		state := c.State()
-		if state.Connected && !state.Time.IsZero() {
+		if state.Connected {
 			return nil
 		}
 		select {
@@ -196,6 +230,14 @@ func (c *Client) WaitForConnection(ctx context.Context, timeout time.Duration) e
 			return ctx.Err()
 		case <-time.After(100 * time.Millisecond):
 		}
+	}
+
+	state := c.State()
+	if state.ParseErrors > 0 {
+		return fmt.Errorf("timed out waiting for INAV heartbeat (%d mavlink parse errors; check baud and mavlink_version)", state.ParseErrors)
+	}
+	if state.LinkOpen {
+		return fmt.Errorf("timed out waiting for INAV heartbeat (serial open but no FC data; check UART6 MAVLink wiring and INAV ports)")
 	}
 	return fmt.Errorf("timed out waiting for INAV telemetry")
 }

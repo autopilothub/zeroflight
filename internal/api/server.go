@@ -174,7 +174,9 @@ type preflightJSON struct {
 
 type vehicleJSON struct {
 	Time         time.Time      `json:"time"`
+	LinkOpen     bool           `json:"link_open"`
 	Connected    bool           `json:"connected"`
+	ParseErrors  uint64         `json:"parse_errors"`
 	Armed        bool           `json:"armed"`
 	Mode         inav.FlightMode `json:"mode"`
 	GCSNavActive bool           `json:"gcs_nav_active"`
@@ -240,7 +242,9 @@ type rawIMUJSON struct {
 func toVehicleJSON(state inav.VehicleState) vehicleJSON {
 	return vehicleJSON{
 		Time:         state.Time,
+		LinkOpen:     state.LinkOpen,
 		Connected:    state.Connected,
+		ParseErrors:  state.ParseErrors,
 		Armed:        state.Armed,
 		Mode:         state.Mode,
 		GCSNavActive: state.GCSNavActive,

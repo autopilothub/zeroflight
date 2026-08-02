@@ -84,7 +84,9 @@ type RawIMU struct {
 // VehicleState is the latest aggregated telemetry snapshot.
 type VehicleState struct {
 	Time         time.Time
-	Connected    bool
+	LinkOpen     bool // serial/UDP channel is open
+	Connected    bool // FC HEARTBEAT received (real MAVLink link)
+	ParseErrors  uint64
 	Armed        bool
 	Mode         FlightMode
 	GCSNavActive bool

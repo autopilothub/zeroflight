@@ -9,11 +9,6 @@ const (
 	dirFrom = '>'
 )
 
-// MSP command IDs used by ZeroFlight.
-const (
-	CmdRAWIMU = 102
-)
-
 // EncodeRequest builds an MSP v1 request frame.
 func EncodeRequest(cmd uint8, payload []byte) []byte {
 	size := uint8(len(payload))

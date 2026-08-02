@@ -57,7 +57,7 @@ func newMissionUploadCmd() *cobra.Command {
 			}
 
 			fmt.Printf("uploading %d waypoints...\n", len(plan.Waypoints))
-			if err := sess.Client().UploadMission(ctx, plan.Waypoints); err != nil {
+			if err := sess.UploadMission(ctx, plan.Waypoints); err != nil {
 				return err
 			}
 			fmt.Println("mission uploaded; switch to MISSION mode on the transmitter to fly")
@@ -91,7 +91,7 @@ func newMissionClearCmd() *cobra.Command {
 				return fmt.Errorf("disarm the vehicle before clearing a mission")
 			}
 
-			if err := sess.Client().ClearMission(ctx); err != nil {
+			if err := sess.ClearMission(ctx); err != nil {
 				return err
 			}
 			fmt.Println("mission cleared")

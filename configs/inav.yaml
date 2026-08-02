@@ -1,5 +1,11 @@
+link:
+  protocol: msp
+  device: "/dev/serial0"
+  baud: 115200
+  poll_hz: 10
+
+# MAVLink settings (only used when link.protocol: mavlink)
 mavlink:
-  # serial:/dev/serial0:115200  or  udp:127.0.0.1:14550
   connection: "serial:/dev/serial0:115200"
   device: "/dev/serial0"
   baud: 115200
@@ -7,6 +13,7 @@ mavlink:
   target_component_id: 1
   out_system_id: 255
   out_component_id: 190
+  version: 2
 
 safety:
   max_altitude_m: 120
@@ -17,10 +24,3 @@ safety:
 
 api:
   listen: "127.0.0.1:8080"
-
-# Optional second UART for MSP raw IMU (UART6 is used for MAVLink).
-msp:
-  enabled: false
-  device: "/dev/ttyUSB0"
-  baud: 115200
-  poll_hz: 10
